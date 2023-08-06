@@ -1,4 +1,4 @@
-package main
+package rule
 
 import (
 	"sync"
@@ -7,71 +7,71 @@ import (
 )
 
 func TestRule_stateDisabled(t *testing.T) {
-	state := newRuleState(-1)
-	e := state.getLast()
-	if !e.at.IsZero() {
+	state := NewRuleState(-1)
+	e := state.GetLast()
+	if !e.At.IsZero() {
 		t.Fatalf("expected entry to be zero")
 	}
 
-	state.add(ruleStateEntry{at: time.Now()})
-	state.add(ruleStateEntry{at: time.Now()})
-	state.add(ruleStateEntry{at: time.Now()})
+	state.Add(StateEntry{At: time.Now()})
+	state.Add(StateEntry{At: time.Now()})
+	state.Add(StateEntry{At: time.Now()})
 
-	if len(state.getAll()) != 1 {
+	if len(state.GetAll()) != 1 {
 		// state should store at least one update at any circumstances
 		t.Fatalf("expected for state to have %d entries; got %d",
-			1, len(state.getAll()),
+			1, len(state.GetAll()),
 		)
 	}
 }
 func TestRule_state(t *testing.T) {
 	stateEntriesN := 20
-	state := newRuleState(stateEntriesN)
-	e := state.getLast()
-	if !e.at.IsZero() {
+	state := NewRuleState(stateEntriesN)
+	e := state.GetLast()
+	if !e.At.IsZero() {
 		t.Fatalf("expected entry to be zero")
 	}
 
 	now := time.Now()
-	state.add(ruleStateEntry{at: now})
+	state.Add(StateEntry{At: now})
 
-	e = state.getLast()
-	if e.at != now {
+	e = state.GetLast()
+	if e.At != now {
 		t.Fatalf("expected entry at %v to be equal to %v",
-			e.at, now)
+			e.At, now)
 	}
 
 	time.Sleep(time.Millisecond)
 	now2 := time.Now()
-	state.add(ruleStateEntry{at: now2})
+	state.Add(StateEntry{At: now2})
 
-	e = state.getLast()
-	if e.at != now2 {
+	e = state.GetLast()
+	if e.At != now2 {
 		t.Fatalf("expected entry at %v to be equal to %v",
-			e.at, now2)
+			e.At, now2)
 	}
 
-	if len(state.getAll()) != 2 {
+	if len(state.GetAll()) != 2 {
 		t.Fatalf("expected for state to have 2 entries only; got %d",
-			len(state.getAll()),
+			len(state.GetAll()),
 		)
 	}
 
 	var last time.Time
 	for i := 0; i < stateEntriesN*2; i++ {
 		last = time.Now()
-		state.add(ruleStateEntry{at: last})
+		state.Add(StateEntry{At: last})
 	}
 
-	e = state.getLast()
-	if e.at != last {
+	e = state.GetLast()
+	if e.At != last {
 		t.Fatalf("expected entry at %v to be equal to %v",
-			e.at, last)
+			e.At, last)
 	}
 
-	if len(state.getAll()) != stateEntriesN {
+	if len(state.GetAll()) != stateEntriesN {
 		t.Fatalf("expected for state to have %d entries only; got %d",
-			stateEntriesN, len(state.getAll()),
+			stateEntriesN, len(state.GetAll()),
 		)
 	}
 }
@@ -80,7 +80,7 @@ func TestRule_state(t *testing.T) {
 // execution of state updates.
 // Should be executed with -race flag
 func TestRule_stateConcurrent(_ *testing.T) {
-	state := newRuleState(20)
+	state := NewRuleState(20)
 
 	const workers = 50
 	const iterations = 100
@@ -90,9 +90,9 @@ func TestRule_stateConcurrent(_ *testing.T) {
 		go func() {
 			defer wg.Done()
 			for i := 0; i < iterations; i++ {
-				state.add(ruleStateEntry{at: time.Now()})
-				state.getAll()
-				state.getLast()
+				state.Add(StateEntry{At: time.Now()})
+				state.GetAll()
+				state.GetLast()
 			}
 		}()
 	}
